@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Smart Soil System</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #e8f5e9;
+      text-align: center;
+    }
+
+    h1 {
+      color: green;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      margin: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      display: inline-block;
+      width: 220px;
+    }
+
+    select {
+      padding: 10px;
+      font-size: 16px;
+      margin: 15px;
+    }
+
+    .graph {
+      margin: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>🌱 Smart Soil Monitoring System</h1>
+
+<!-- 🌍 Region -->
+<h3>Select Region</h3>
+<select id="region">
+  <option value="north">North India</option>
+  <option value="south">South India</option>
+  <option value="east">East India</option>
+  <option value="west">West India</option>
+</select>
+
+<br>
+
+<!-- 📊 Data Cards -->
+<div class="card">
+  <h3>Moisture</h3>
+  <p id="m">Loading...</p>
+</div>
+
+<div class="card">
+  <h3>pH</h3>
+  <p id="ph">Loading...</p>
+</div>
+
+<div class="card">
+  <h3>Temperature</h3>
+  <p id="t">Loading...</p>
+</div>
+
+<div class="card">
+  <h3>Recommendation</h3>
+  <p id="rec">Loading...</p>
+</div>
+
+<!-- 📊 GRAPHS -->
+<h2>📊 Live Graphs</h2>
+
+<div class="graph">
+  <h3>Moisture Graph</h3>
+  <iframe width="450" height="260"
+  src="https://thingspeak.com/channels/3307630/charts/1?dynamic=true">
+  </iframe>
+</div>
+
+<div class="graph">
+  <h3>pH Graph</h3>
+  <iframe width="450" height="260"
+  src="https://thingspeak.com/channels/3307630/charts/2?dynamic=true">
+  </iframe>
+</div>
+
+<div class="graph">
+  <h3>Temperature Graph</h3>
+  <iframe width="450" height="260"
+  src="https://thingspeak.com/channels/3307630/charts/3?dynamic=true">
+  </iframe>
+</div>
+
+<script>
+async function getData() {
+  let response = await fetch("https://api.thingspeak.com/channels/3307630/feeds.json");
+  let data = await response.json();
+
+  let last = data.feeds[data.feeds.length - 1];
+
+  let moisture = parseInt(last.field1);
+  let ph = parseFloat(last.field2);
+  let temp = parseFloat(last.field3);
+
+  document.getElementById("m").innerText = moisture;
+  document.getElementById("ph").innerText = ph;
+  document.getElementById("t").innerText = temp;
+
+  let region = document.getElementById("region").value;
+  let rec = "";
+
+  if(region === "north"){
+    if(ph < 6){
+      rec = "North: Add Lime (Wheat)";
+    }
+    else if(moisture < 300){
+      rec = "North: Irrigation Needed";
+    }
+    else{
+      rec = "North: Use NPK Fertilizer";
+    }
+  }
+
+  else if(region === "south"){
+    if(moisture < 300){
+      rec = "South: Increase Water (Rice)";
+    }
+    else if(ph > 7.5){
+      rec = "South: Add Sulfur";
+    }
+    else{
+      rec = "South: Nitrogen Fertilizer";
+    }
+  }
+
+  else if(region === "east"){
+    rec = "East: Organic Compost (Rice/Jute)";
+  }
+
+  else if(region === "west"){
+    if(moisture < 300){
+      rec = "West: Use Drip Irrigation";
+    }
+    else{
+      rec = "West: Grow Millets/Cotton";
+    }
+  }
+
+  document.getElementById("rec").innerText = rec;
+}
+
+setInterval(getData, 5000);
+getData();
+</script>
+
+</body>
+</html>
