@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Smart Soil System</title>
+  <title>Smart Soil AI System</title>
 
   <style>
     body {
@@ -38,7 +38,7 @@
 
 <body>
 
-<h1>🌱 Smart Soil Monitoring System</h1>
+<h1>🌱 Smart Soil AI Monitoring System</h1>
 
 <!-- 🌍 Region -->
 <h3>Select Region</h3>
@@ -51,7 +51,7 @@
 
 <br>
 
-<!-- 📊 Data Cards -->
+<!-- 📊 Data -->
 <div class="card">
   <h3>Moisture</h3>
   <p id="m">Loading...</p>
@@ -68,38 +68,80 @@
 </div>
 
 <div class="card">
-  <h3>Recommendation</h3>
+  <h3>🌱 Recommendation</h3>
   <p id="rec">Loading...</p>
 </div>
 
-<!-- 📊 GRAPHS -->
+<!-- 📊 Graphs -->
 <h2>📊 Live Graphs</h2>
 
 <div class="graph">
-  <h3>Moisture Graph</h3>
+  <h3>Moisture</h3>
   <iframe width="450" height="260"
   src="https://thingspeak.com/channels/3307630/charts/1?dynamic=true">
   </iframe>
 </div>
 
 <div class="graph">
-  <h3>pH Graph</h3>
+  <h3>pH</h3>
   <iframe width="450" height="260"
   src="https://thingspeak.com/channels/3307630/charts/2?dynamic=true">
   </iframe>
 </div>
 
 <div class="graph">
-  <h3>Temperature Graph</h3>
+  <h3>Temperature</h3>
   <iframe width="450" height="260"
   src="https://thingspeak.com/channels/3307630/charts/3?dynamic=true">
   </iframe>
 </div>
 
 <script>
-async function getData() {
-  let response = await fetch("https://api.thingspeak.com/channels/3307630/feeds.json");
-  let data = await response.json();
+
+// 🤖 AI Crop Function
+function getCropAI(moisture, ph, temp, region){
+
+  let crops = [
+    {name: "Rice", score: 0},
+    {name: "Wheat", score: 0},
+    {name: "Maize", score: 0},
+    {name: "Cotton", score: 0},
+    {name: "Sugarcane", score: 0},
+    {name: "Millets", score: 0},
+    {name: "Tea", score: 0},
+    {name: "Coffee", score: 0}
+  ];
+
+  crops.forEach(c => {
+
+    if(moisture > 600 && c.name === "Rice") c.score += 3;
+    if(moisture < 300 && c.name === "Millets") c.score += 3;
+    if(moisture >= 300 && moisture <= 600 && c.name === "Wheat") c.score += 2;
+
+    if(ph >= 6 && ph <= 7 && (c.name === "Wheat" || c.name === "Maize")) c.score += 3;
+    if(ph < 6 && c.name === "Tea") c.score += 3;
+    if(ph > 7.5 && c.name === "Cotton") c.score += 2;
+
+    if(temp > 30 && c.name === "Sugarcane") c.score += 3;
+    if(temp < 25 && c.name === "Wheat") c.score += 2;
+    if(temp >= 25 && temp <= 30 && c.name === "Maize") c.score += 2;
+
+    if(region === "north" && (c.name === "Wheat")) c.score += 2;
+    if(region === "south" && (c.name === "Rice" || c.name === "Coffee")) c.score += 2;
+    if(region === "east" && (c.name === "Tea" || c.name === "Rice")) c.score += 2;
+    if(region === "west" && (c.name === "Millets" || c.name === "Cotton")) c.score += 2;
+
+  });
+
+  crops.sort((a, b) => b.score - a.score);
+  return crops[0].name;
+}
+
+// 📡 Get Data
+async function getData(){
+
+  let res = await fetch("https://api.thingspeak.com/channels/3307630/feeds.json");
+  let data = await res.json();
 
   let last = data.feeds[data.feeds.length - 1];
 
@@ -112,50 +154,35 @@ async function getData() {
   document.getElementById("t").innerText = temp;
 
   let region = document.getElementById("region").value;
-  let rec = "";
 
-  if(region === "north"){
-    if(ph < 6){
-      rec = "North: Add Lime (Wheat)";
-    }
-    else if(moisture < 300){
-      rec = "North: Irrigation Needed";
-    }
-    else{
-      rec = "North: Use NPK Fertilizer";
-    }
+  // 🤖 AI Crop
+  let crop = getCropAI(moisture, ph, temp, region);
+
+  // 🌱 Fertilizer
+  let fertilizer = "";
+
+  if(ph < 6){
+    fertilizer = "Add Lime";
+  }
+  else if(ph > 7.5){
+    fertilizer = "Add Sulfur";
+  }
+  else if(moisture < 300){
+    fertilizer = "Irrigation Needed";
+  }
+  else{
+    fertilizer = "Use NPK Fertilizer";
   }
 
-  else if(region === "south"){
-    if(moisture < 300){
-      rec = "South: Increase Water (Rice)";
-    }
-    else if(ph > 7.5){
-      rec = "South: Add Sulfur";
-    }
-    else{
-      rec = "South: Nitrogen Fertilizer";
-    }
-  }
-
-  else if(region === "east"){
-    rec = "East: Organic Compost (Rice/Jute)";
-  }
-
-  else if(region === "west"){
-    if(moisture < 300){
-      rec = "West: Use Drip Irrigation";
-    }
-    else{
-      rec = "West: Grow Millets/Cotton";
-    }
-  }
+  let rec = "🌾 " + crop + " | 🌱 " + fertilizer;
 
   document.getElementById("rec").innerText = rec;
 }
 
+// Refresh every 5 sec
 setInterval(getData, 5000);
 getData();
+
 </script>
 
 </body>
